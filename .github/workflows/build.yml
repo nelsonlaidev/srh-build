@@ -1,0 +1,61 @@
+name: Build & Release serverless-redis-http
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "SRH version to build (e.g., 0.0.10)"
+        required: true
+        default: "0.0.10"
+
+permissions:
+  contents: write # 發布 release 需要
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      MIX_ENV: prod
+      SRH_VERSION: ${{ github.event.inputs.version }}
+
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir/Erlang
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "25.0"
+          elixir-version: "1.13.4-otp-25"
+
+      - name: Prepare Hex & Rebar
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Clone serverless-redis-http @ tag
+        run: |
+          rm -rf /tmp/srh
+          git clone --depth=1 --branch ${SRH_VERSION} https://github.com/hiett/serverless-redis-http.git /tmp/srh
+          cd /tmp/srh
+          echo "SRH commit: $(git rev-parse HEAD)"
+
+      - name: Build release
+        working-directory: /tmp/srh
+        run: |
+          mix deps.get
+          mix release
+
+      - name: Compress release
+        working-directory: /tmp/srh
+        run: |
+          tar -czf serverless-redis-http-${SRH_VERSION}.tar.gz -C _build/prod/rel/prod .
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.SRH_VERSION }}
+          name: "serverless-redis-http ${{ env.SRH_VERSION }}"
+          files: /tmp/srh/serverless-redis-http-${{ env.SRH_VERSION }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
