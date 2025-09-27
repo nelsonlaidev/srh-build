@@ -50,7 +50,7 @@ jobs:
       - name: Compress release
         working-directory: /tmp/srh
         run: |
-          tar -czf serverless-redis-http-${SRH_VERSION}.tar.gz -C _build/prod/rel/prod .
+          tar -czf serverless-redis-http-${SRH_VERSION}.tar.gz -C _build/prod/rel prod
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
