@@ -9,7 +9,7 @@ on:
         default: "0.0.10"
 
 permissions:
-  contents: write # 發布 release 需要
+  contents: write
 
 jobs:
   build:
